@@ -20,7 +20,7 @@ bun run test
 bun run build
 ```
 
-`bun run build` creates a static site in `dist/`. The GitHub Actions workflow tests, builds, and publishes it to GitHub Pages when `main` changes. The relative asset paths also let the site work at the default `/notas/` Pages URL before the custom domain is connected. No application server or environment variables are required.
+`bun run build` creates a static site in `dist/`. `bun run deploy` builds and deploys it as a Cloudflare Worker with static assets. Wrangler also assigns `notas.rigos.dev` as a Worker Custom Domain. Cloudflare creates the DNS record and certificate for that domain. No application server or runtime environment variables are required.
 
 ## Notes and backups
 
