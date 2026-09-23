@@ -5,8 +5,6 @@
   --muted: #8a877f;
   --faint: #56565b;
   --hover: rgb(255 255 255 / .06);
-  --island: #1c1d21;
-  --island-edge: rgb(255 255 255 / .06);
   --lamp: #d6b47c;
   --danger: #e59c8c;
   --serif: Charter, "Bitstream Charter", "Iowan Old Style", "Sitka Text", Cambria, Georgia, serif;
@@ -28,42 +26,28 @@ button, textarea { font: inherit; color: inherit; }
 
 .app { position: relative; height: 100dvh; display: flex; flex-direction: column; }
 
-/* Chrome floats over the page and steps aside while you write. */
-.chrome {
-  --island-inset: 14px;
+/* Islands: each control group sits alone in a corner and steps aside while you write. */
+.island {
+  --inset: clamp(14px, 2.5vw, 28px);
   position: absolute;
-  inset-inline: 0;
   z-index: 1;
+  height: 32px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding-inline: max(var(--island-inset), env(safe-area-inset-left)) max(var(--island-inset), env(safe-area-inset-right));
-  pointer-events: none;
   transition: opacity .18s var(--ease), transform .18s var(--ease);
 }
-.chrome-top { top: 0; padding-top: calc(var(--island-inset) + env(safe-area-inset-top)); }
-.chrome-bottom { bottom: 0; padding-bottom: calc(var(--island-inset) + env(safe-area-inset-bottom)); justify-content: flex-end; }
-.app[data-writing] .chrome:not(:focus-within) { opacity: 0; transition-duration: .6s; }
-.app[data-writing] .chrome-top:not(:focus-within) { transform: translateY(-3px); }
-.app[data-writing] .chrome-bottom:not(:focus-within) { transform: translateY(3px); }
+.island-top { top: calc(var(--inset) + env(safe-area-inset-top)); }
+.island-bottom { bottom: calc(var(--inset) + env(safe-area-inset-bottom)); }
+.island-left { left: calc(var(--inset) + env(safe-area-inset-left)); }
+.island-right { right: calc(var(--inset) + env(safe-area-inset-right)); }
+.app[data-writing] .island:not(:focus-within) { opacity: 0; transition-duration: .6s; }
+.app[data-writing] .island-top:not(:focus-within) { transform: translateY(-3px); }
+.app[data-writing] .island-bottom:not(:focus-within) { transform: translateY(3px); }
 
-/* Small floating pills instead of full-width bars. */
-.island {
-  height: 36px;
-  display: flex;
-  align-items: center;
-  border: 1px solid var(--island-edge);
-  border-radius: 999px;
-  background: var(--island);
-  box-shadow: 0 10px 28px -14px rgb(0 0 0 / .7);
-  pointer-events: auto;
-  transition: border-color .2s var(--ease);
-}
-
-.brand { padding: 0 15px 1px; font-family: var(--serif); font-size: 16px; color: var(--muted); letter-spacing: -.01em; user-select: none; }
+.brand { font-family: var(--serif); font-size: 17px; color: var(--muted); letter-spacing: -.01em; user-select: none; }
 .brand-dot { color: var(--lamp); }
 
-.actions { padding: 0 2px 0 4px; }
+.actions { gap: 2px; }
 .save { width: 22px; height: 30px; display: grid; place-items: center; }
 .save::before {
   content: "";
@@ -96,15 +80,14 @@ button, textarea { font: inherit; color: inherit; }
 
 .counts {
   gap: 12px;
-  padding: 0 15px;
-  color: var(--muted);
+  color: var(--faint);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   user-select: none;
   animation: appear .2s var(--ease) both;
 }
-.counts[data-selection] { color: var(--text); border-color: rgb(214 180 124 / .24); }
+.counts[data-selection] { color: var(--muted); }
 .counts-label { color: var(--lamp); }
 
 @keyframes appear { from { opacity: 0; transform: translateY(2px); } }
@@ -112,9 +95,7 @@ button, textarea { font: inherit; color: inherit; }
 /* The page itself: one quiet column that scrolls under softly faded edges. */
 .editor {
   --measure: 34em;
-  --clear-top: 56px;
-  --clear-bottom: calc(52px + env(safe-area-inset-bottom));
-  --fade: 40px;
+  --fade: 24px;
   flex: 1;
   min-height: 0;
   width: 100%;
@@ -134,10 +115,7 @@ button, textarea { font: inherit; color: inherit; }
   overflow-wrap: break-word;
   scrollbar-width: thin;
   scrollbar-color: rgb(255 255 255 / .1) transparent;
-  /* Text is fully gone before it reaches the chrome bands, then fades in over --fade. */
-  mask-image: linear-gradient(to bottom,
-    transparent var(--clear-top), #000 calc(var(--clear-top) + var(--fade)),
-    #000 calc(100% - var(--clear-bottom) - var(--fade)), transparent calc(100% - var(--clear-bottom)));
+  mask-image: linear-gradient(to bottom, transparent, #000 var(--fade), #000 calc(100% - var(--fade)), transparent);
 }
 .editor::placeholder { color: var(--faint); opacity: 1; }
 .editor:disabled { opacity: 1; -webkit-text-fill-color: var(--text); }
@@ -174,9 +152,9 @@ button, textarea { font: inherit; color: inherit; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
 @media (max-width: 640px) {
-  .chrome { --island-inset: 10px; }
-  /* 26px lines the text up with the brand inside its island. */
-  .editor { --clear-top: calc(48px + env(safe-area-inset-top)); --clear-bottom: calc(48px + env(safe-area-inset-bottom)); --fade: 36px; padding-top: calc(84px + env(safe-area-inset-top)); padding-inline: 26px; font-size: 18px; line-height: 1.65; }
+  /* Same 22px inset for islands and text so the brand lines up with the writing. */
+  .island { --inset: 22px; }
+  .editor { --fade: 20px; padding-top: calc(80px + env(safe-area-inset-top)); padding-inline: 22px; font-size: 18px; line-height: 1.65; }
 }
 
 @media (prefers-reduced-motion: reduce) {

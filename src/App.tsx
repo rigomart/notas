@@ -212,15 +212,13 @@ export default function App({ repository }: { repository?: NotesRepository }) {
 
   return (
     <main class="app" data-ready={ready || undefined} data-writing={writing || undefined}>
-      <header class="chrome chrome-top">
-        <span class="island brand">notas<span class="brand-dot" aria-hidden="true">.</span></span>
-        <div class="island actions">
-          <span class="save" data-state={saveState} role="status" aria-label={statusLabel} title={statusLabel} />
-          <button class="icon-button" aria-label="Export backup" title="Export backup" onClick={downloadBackup} disabled={!ready || !body}><Icon name="download" /></button>
-          <button class="icon-button" aria-label="Import backup" title="Import backup" onClick={() => importRef.current?.click()} disabled={!ready}><Icon name="upload" /></button>
-          <input ref={importRef} class="visually-hidden" type="file" accept=".json,application/json" aria-label="Import backup file" tabIndex={-1} onChange={(event) => { const file = event.currentTarget.files?.[0]; if (file) void loadBackup(file); }} />
-        </div>
-      </header>
+      <span class="island island-top island-left brand">notas<span class="brand-dot" aria-hidden="true">.</span></span>
+      <div class="island island-top island-right actions">
+        <span class="save" data-state={saveState} role="status" aria-label={statusLabel} title={statusLabel} />
+        <button class="icon-button" aria-label="Export backup" title="Export backup" onClick={downloadBackup} disabled={!ready || !body}><Icon name="download" /></button>
+        <button class="icon-button" aria-label="Import backup" title="Import backup" onClick={() => importRef.current?.click()} disabled={!ready}><Icon name="upload" /></button>
+        <input ref={importRef} class="visually-hidden" type="file" accept=".json,application/json" aria-label="Import backup file" tabIndex={-1} onChange={(event) => { const file = event.currentTarget.files?.[0]; if (file) void loadBackup(file); }} />
+      </div>
 
       <textarea
         ref={editorRef}
@@ -242,16 +240,14 @@ export default function App({ repository }: { repository?: NotesRepository }) {
         spellcheck
       />
 
-      <footer class="chrome chrome-bottom">
-        {body && (
-          // Keyed by mode so switching between note and selection counts replays the fade.
-          <div class="island counts" key={selection ? 'selection' : 'note'} data-selection={selection ? '' : undefined}>
-            {selection && <span class="counts-label">Selected</span>}
-            <span>{stats.words}</span>
-            <span>{stats.characters}</span>
-          </div>
-        )}
-      </footer>
+      {body && (
+        // Keyed by mode so switching between note and selection counts replays the fade.
+        <div class="island island-bottom island-right counts" key={selection ? 'selection' : 'note'} data-selection={selection ? '' : undefined}>
+          {selection && <span class="counts-label">Selected</span>}
+          <span>{stats.words}</span>
+          <span>{stats.characters}</span>
+        </div>
+      )}
 
       {storageError && (
         <div class="toast" role="alert">
