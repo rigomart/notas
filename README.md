@@ -28,6 +28,6 @@ Use the download icon to export a JSON backup and the upload icon to import one.
 
 Browser storage belongs to this site and browser profile. Clearing site data, using private browsing, or changing devices can remove access to your writing. Export a backup for anything important. The small status dot changes color while saving or if storage fails, and Notas also shows an error when a save fails.
 
-While you type, the controls and word count fade away. They come back when you pause or move the pointer.
+The bottom corner shows word and character counts, or counts for the selected text while you have a selection. While you type, the controls and counts fade away. They come back when you pause or move the pointer.
 
 Keyboard shortcut: `⌘/Ctrl+S` saves pending edits.

@@ -50,7 +50,7 @@ describe('Notas', () => {
     await waitFor(() => expect(editor).toBeEnabled());
   });
 
-  it('counts words and steps the chrome aside while writing', async () => {
+  it('counts words and characters and steps the chrome aside while writing', async () => {
     const repository = createNotesRepository(crypto.randomUUID());
     const { container } = render(<App repository={repository} />);
     const editor = await screen.findByRole('textbox', { name: 'Note' });
@@ -60,10 +60,31 @@ describe('Notas', () => {
 
     fireEvent.input(editor, { target: { value: 'one quiet line' } });
     expect(screen.getByText('3 words')).toBeInTheDocument();
+    expect(screen.getByText('14 characters')).toBeInTheDocument();
     expect(app).toHaveAttribute('data-writing');
 
-    fireEvent.input(editor, { target: { value: 'one' } });
+    fireEvent.input(editor, { target: { value: 'a' } });
     expect(screen.getByText('1 word')).toBeInTheDocument();
+    expect(screen.getByText('1 character')).toBeInTheDocument();
     await waitFor(() => expect(app).not.toHaveAttribute('data-writing'), { timeout: 2500 });
+  });
+
+  it('counts only the selected text while there is a selection', async () => {
+    const repository = createNotesRepository(crypto.randomUUID());
+    render(<App repository={repository} />);
+    const editor = await screen.findByRole<HTMLTextAreaElement>('textbox', { name: 'Note' });
+    await waitFor(() => expect(editor).toHaveFocus());
+    fireEvent.input(editor, { target: { value: 'one quiet line' } });
+
+    editor.setSelectionRange(4, 14);
+    fireEvent.select(editor);
+    expect(screen.getByText('Selected')).toBeInTheDocument();
+    expect(screen.getByText('2 words')).toBeInTheDocument();
+    expect(screen.getByText('10 characters')).toBeInTheDocument();
+
+    editor.setSelectionRange(14, 14);
+    fireEvent.select(editor);
+    expect(screen.queryByText('Selected')).not.toBeInTheDocument();
+    expect(screen.getByText('3 words')).toBeInTheDocument();
   });
 });
