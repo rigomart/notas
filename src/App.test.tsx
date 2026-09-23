@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/preact';
 import { describe, expect, it } from 'vitest';
 import App from './App';
 import { createNotesRepository } from './storage';
@@ -12,7 +12,7 @@ describe('Notas', () => {
     expect(screen.queryByRole('textbox', { name: 'Note title' })).not.toBeInTheDocument();
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
 
-    fireEvent.change(editor, { target: { value: 'Remember milk' } });
+    fireEvent.input(editor, { target: { value: 'Remember milk' } });
     await waitFor(async () => expect((await repository.getNotes())[0]?.body).toBe('Remember milk'));
 
     view.unmount();
@@ -48,5 +48,43 @@ describe('Notas', () => {
     expect(editor).toBeDisabled();
     release();
     await waitFor(() => expect(editor).toBeEnabled());
+  });
+
+  it('counts words and characters and steps the chrome aside while writing', async () => {
+    const repository = createNotesRepository(crypto.randomUUID());
+    const { container } = render(<App repository={repository} />);
+    const editor = await screen.findByRole('textbox', { name: 'Note' });
+    await waitFor(() => expect(editor).toBeEnabled());
+    const app = container.querySelector('main')!;
+    expect(app).not.toHaveAttribute('data-writing');
+
+    fireEvent.input(editor, { target: { value: 'one quiet line' } });
+    expect(screen.getByText('3 words')).toBeInTheDocument();
+    expect(screen.getByText('14 characters')).toBeInTheDocument();
+    expect(app).toHaveAttribute('data-writing');
+
+    fireEvent.input(editor, { target: { value: 'a' } });
+    expect(screen.getByText('1 word')).toBeInTheDocument();
+    expect(screen.getByText('1 character')).toBeInTheDocument();
+    await waitFor(() => expect(app).not.toHaveAttribute('data-writing'), { timeout: 2500 });
+  });
+
+  it('counts only the selected text while there is a selection', async () => {
+    const repository = createNotesRepository(crypto.randomUUID());
+    render(<App repository={repository} />);
+    const editor = await screen.findByRole<HTMLTextAreaElement>('textbox', { name: 'Note' });
+    await waitFor(() => expect(editor).toHaveFocus());
+    fireEvent.input(editor, { target: { value: 'one quiet line' } });
+
+    editor.setSelectionRange(4, 14);
+    fireEvent.select(editor);
+    expect(screen.getByText('Selected')).toBeInTheDocument();
+    expect(screen.getByText('2 words')).toBeInTheDocument();
+    expect(screen.getByText('10 characters')).toBeInTheDocument();
+
+    editor.setSelectionRange(14, 14);
+    fireEvent.select(editor);
+    expect(screen.queryByText('Selected')).not.toBeInTheDocument();
+    expect(screen.getByText('3 words')).toBeInTheDocument();
   });
 });
