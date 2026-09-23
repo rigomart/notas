@@ -38,10 +38,17 @@ function singleNote(notes: Note[], lastId: string | null): Note | null {
   };
 }
 
-function wordCount(text: string): string {
-  const words = text.match(/\S+/g)?.length ?? 0;
-  if (!words) return '';
-  return `${words.toLocaleString()} ${words === 1 ? 'word' : 'words'}`;
+function plural(count: number, one: string, many: string): string {
+  return `${count.toLocaleString()} ${count === 1 ? one : many}`;
+}
+
+function textStats(text: string) {
+  let characters = 0;
+  for (const _ of text) characters += 1; // Code points, so an emoji counts once.
+  return {
+    words: plural(text.match(/\S+/g)?.length ?? 0, 'word', 'words'),
+    characters: plural(characters, 'character', 'characters'),
+  };
 }
 
 export default function App({ repository }: { repository?: NotesRepository }) {
@@ -51,6 +58,7 @@ export default function App({ repository }: { repository?: NotesRepository }) {
   const [saveState, setSaveState] = useState<SaveState>('saved');
   const [storageError, setStorageError] = useState('');
   const [writing, setWriting] = useState(false);
+  const [selection, setSelection] = useState('');
   const editorRef = useRef<HTMLTextAreaElement>(null);
   const importRef = useRef<HTMLInputElement>(null);
   const timer = useRef<number | null>(null);
@@ -102,6 +110,18 @@ export default function App({ repository }: { repository?: NotesRepository }) {
     if (writingTimer.current !== null) window.clearTimeout(writingTimer.current);
     writingTimer.current = window.setTimeout(() => setWriting(false), WRITING_IDLE_MS);
   }
+
+  function syncSelection() {
+    const editor = editorRef.current;
+    if (!editor || document.activeElement !== editor) return setSelection('');
+    setSelection(editor.value.slice(editor.selectionStart, editor.selectionEnd));
+  }
+
+  useEffect(() => {
+    // Also catches selections collapsed by a click or arrow key, which fire no `select` event.
+    document.addEventListener('selectionchange', syncSelection);
+    return () => document.removeEventListener('selectionchange', syncSelection);
+  }, []);
 
   useEffect(() => {
     function onPointerMove(event: PointerEvent) {
@@ -187,13 +207,14 @@ export default function App({ repository }: { repository?: NotesRepository }) {
   }
 
   const body = note?.body ?? '';
+  const stats = textStats(selection || body);
   const statusLabel = saveState === 'saving' ? 'Saving' : saveState === 'error' ? 'Unable to save' : 'Saved locally';
 
   return (
     <main class="app" data-ready={ready || undefined} data-writing={writing || undefined}>
       <header class="chrome chrome-top">
-        <span class="brand">notas<span class="brand-dot" aria-hidden="true">.</span></span>
-        <div class="actions">
+        <span class="island brand">notas<span class="brand-dot" aria-hidden="true">.</span></span>
+        <div class="island actions">
           <span class="save" data-state={saveState} role="status" aria-label={statusLabel} title={statusLabel} />
           <button class="icon-button" aria-label="Export backup" title="Export backup" onClick={downloadBackup} disabled={!ready || !body}><Icon name="download" /></button>
           <button class="icon-button" aria-label="Import backup" title="Import backup" onClick={() => importRef.current?.click()} disabled={!ready}><Icon name="upload" /></button>
@@ -214,13 +235,22 @@ export default function App({ repository }: { repository?: NotesRepository }) {
           // Writing at the end keeps the newest line clear of the faded bottom edge.
           if (editor.selectionEnd === editor.value.length) editor.scrollTop = editor.scrollHeight;
         }}
-        onBlur={() => void flushSave()}
+        onSelect={syncSelection}
+        onFocus={syncSelection}
+        onBlur={() => { setSelection(''); void flushSave(); }}
         disabled={!ready}
         spellcheck
       />
 
       <footer class="chrome chrome-bottom">
-        <span class="count">{wordCount(body)}</span>
+        {body && (
+          // Keyed by mode so switching between note and selection counts replays the fade.
+          <div class="island counts" key={selection ? 'selection' : 'note'} data-selection={selection ? '' : undefined}>
+            {selection && <span class="counts-label">Selected</span>}
+            <span>{stats.words}</span>
+            <span>{stats.characters}</span>
+          </div>
+        )}
       </footer>
 
       {storageError && (
