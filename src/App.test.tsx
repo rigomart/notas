@@ -4,58 +4,49 @@ import App from './App';
 import { createNotesRepository } from './storage';
 
 describe('Notas', () => {
-  it('opens ready to write and restores the first note after reopening', async () => {
+  it('opens straight into one focused editor and restores its text', async () => {
     const repository = createNotesRepository(crypto.randomUUID());
     const view = render(<App repository={repository} />);
-    const body = await screen.findByRole('textbox', { name: 'Note body' });
-    await waitFor(() => expect(body).toHaveFocus());
+    const editor = await screen.findByRole('textbox', { name: 'Note' });
+    await waitFor(() => expect(editor).toHaveFocus());
+    expect(screen.queryByRole('textbox', { name: 'Note title' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
 
-    fireEvent.change(body, { target: { value: 'Remember milk' } });
-    await waitFor(async () => {
-      expect((await repository.getNotes())[0]?.body).toBe('Remember milk');
-    });
+    fireEvent.change(editor, { target: { value: 'Remember milk' } });
+    await waitFor(async () => expect((await repository.getNotes())[0]?.body).toBe('Remember milk'));
 
     view.unmount();
     render(<App repository={repository} />);
     expect(await screen.findByDisplayValue('Remember milk')).toBeInTheDocument();
+    expect(await repository.getNotes()).toHaveLength(1);
   });
 
-  it('searches title and body, then opens a matching note', async () => {
+  it('keeps all existing note text when moving to one document', async () => {
     const repository = createNotesRepository(crypto.randomUUID());
     await repository.putNote({ id: 'one', title: 'Sketches', body: 'blue house', createdAt: 1, updatedAt: 1 });
     await repository.putNote({ id: 'two', title: 'Shopping', body: 'lemons', createdAt: 2, updatedAt: 2 });
+    await repository.setLastNoteId('one');
     render(<App repository={repository} />);
 
-    const search = await screen.findByRole('searchbox', { name: 'Search notes' });
-    fireEvent.change(search, { target: { value: 'blue' } });
-    expect(screen.getByRole('button', { name: /Sketches/ })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Shopping/ })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /Sketches/ }));
-    expect(screen.getByRole('textbox', { name: 'Note body' })).toHaveValue('blue house');
-  });
-
-  it('allows undo after deleting a note', async () => {
-    const repository = createNotesRepository(crypto.randomUUID());
-    await repository.putNote({ id: 'one', title: 'Keep me', body: 'text', createdAt: 1, updatedAt: 1 });
-    render(<App repository={repository} />);
-
-    fireEvent.click(await screen.findByRole('button', { name: 'Delete note' }));
-    expect(screen.queryByRole('button', { name: /Keep me/ })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+    const editor = await screen.findByRole('textbox', { name: 'Note' });
+    await waitFor(() => expect(editor).toHaveValue('Sketches\n\nblue house\n\n\nShopping\n\nlemons'));
     await waitFor(async () => {
-      expect((await repository.getNotes()).map((note) => note.id)).toContain('one');
+      const notes = await repository.getNotes();
+      expect(notes).toHaveLength(1);
+      expect(notes[0].title).toBe('');
     });
   });
 
-  it('waits for stored notes before allowing a new note', async () => {
+  it('waits for stored text before allowing edits', async () => {
     const base = createNotesRepository(crypto.randomUUID());
     let release!: () => void;
     const gate = new Promise<void>((resolve) => { release = resolve; });
     const repository = { ...base, getNotes: async () => { await gate; return base.getNotes(); } };
     render(<App repository={repository} />);
 
-    expect(screen.getByRole('button', { name: /New note/ })).toBeDisabled();
+    const editor = screen.getByRole('textbox', { name: 'Note' });
+    expect(editor).toBeDisabled();
     release();
-    await waitFor(() => expect(screen.getByRole('button', { name: /New note/ })).toBeEnabled());
+    await waitFor(() => expect(editor).toBeEnabled());
   });
 });

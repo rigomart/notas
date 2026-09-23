@@ -9,6 +9,7 @@ interface NotesSchema extends DBSchema {
 export type NotesRepository = {
   getNotes(): Promise<Note[]>;
   putNote(note: Note): Promise<void>;
+  replaceNotes(note: Note): Promise<void>;
   putNotes(notes: Note[]): Promise<void>;
   deleteNote(id: string): Promise<void>;
   getLastNoteId(): Promise<string | null>;
@@ -29,6 +30,12 @@ export function createNotesRepository(name = 'notas'): NotesRepository {
     },
     async putNote(note) {
       const tx = (await database).transaction('notes', 'readwrite');
+      await tx.store.put(note);
+      await tx.done;
+    },
+    async replaceNotes(note) {
+      const tx = (await database).transaction('notes', 'readwrite');
+      await tx.store.clear();
       await tx.store.put(note);
       await tx.done;
     },
