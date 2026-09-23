@@ -22,6 +22,10 @@ bun run build
 
 `bun run build` creates a static site in `dist/`. `bun run deploy` builds and deploys it as a Cloudflare Worker with static assets. Wrangler also assigns `notas.rigos.dev` as a Worker Custom Domain. Cloudflare creates the DNS record and certificate for that domain. No application server or runtime environment variables are required.
 
+## Deploy from GitHub
+
+Add `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as repository secrets in GitHub. The token needs permission to deploy Workers and manage the configured custom domain. Once this workflow is on the default branch, open **Actions → Deploy to Cloudflare → Run workflow** and select the branch to deploy. The workflow runs the tests and deploys only when started manually.
+
 ## Backups
 
 Use the download icon to export a JSON backup and the upload icon to import one. Imported text is appended to the current page, so existing writing is kept. If you used an earlier version with several titled notes, Notas combines their titles and bodies into this one page when you first open it.
