@@ -20,7 +20,7 @@ bun run test
 bun run build
 ```
 
-`bun run build` creates a static site in `dist/`. It can be served from any static host under `notas.rigos.dev`; no application server or environment variables are required. Serve it over HTTPS so browser storage and downloads work in the normal secure context.
+`bun run build` creates a static site in `dist/`. The GitHub Actions workflow tests, builds, and publishes it to GitHub Pages when `main` changes. The relative asset paths also let the site work at the default `/notas/` Pages URL before the custom domain is connected. No application server or environment variables are required.
 
 ## Notes and backups
 
