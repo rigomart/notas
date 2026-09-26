@@ -12,13 +12,14 @@ export function formatLastUpdated(updatedAt: number, now = Date.now()): string {
   if (sameDay(date, current)) return `Updated ${time}`;
 
   const yesterday = new Date(current.getFullYear(), current.getMonth(), current.getDate() - 1);
-  if (sameDay(date, yesterday)) return 'Updated yesterday';
+  if (sameDay(date, yesterday)) return `Updated yesterday, ${time}`;
 
-  return `Updated ${date.toLocaleDateString('en-US', {
+  const day = date.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     ...(date.getFullYear() === current.getFullYear() ? {} : { year: 'numeric' }),
-  })}`;
+  });
+  return `Updated ${day}, ${time}`;
 }
 
 export function lastUpdatedLabel(updatedAt: number): string {

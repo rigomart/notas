@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/preact';
 import { describe, expect, it } from 'vitest';
 import App from './App';
 import { createNotesRepository } from './storage';
+import { formatLastUpdated } from './time';
 
 describe('Notas', () => {
   it('opens straight into one focused editor and restores its text', async () => {
@@ -46,7 +47,8 @@ describe('Notas', () => {
 
     await screen.findByDisplayValue('kept');
     const updated = screen.getByLabelText(/last updated/i);
-    expect(updated).toHaveTextContent(/^Updated /);
+    expect(updated).toHaveTextContent(formatLastUpdated(updatedAt));
+    expect(updated.textContent).toMatch(/\d{1,2}:\d{2} (AM|PM)$/);
     expect(updated.compareDocumentPosition(screen.getByRole('status')) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
   });
 

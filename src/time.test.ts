@@ -8,16 +8,16 @@ describe('formatLastUpdated', () => {
     expect(formatLastUpdated(new Date(2026, 8, 26, 9, 5).getTime(), now)).toBe('Updated 9:05 AM');
   });
 
-  it('names yesterday without repeating the clock time', () => {
-    expect(formatLastUpdated(new Date(2026, 8, 25, 21, 40).getTime(), now)).toBe('Updated yesterday');
+  it('keeps the clock time for an update from yesterday', () => {
+    expect(formatLastUpdated(new Date(2026, 8, 25, 21, 40).getTime(), now)).toBe('Updated yesterday, 9:40 PM');
   });
 
-  it('shows the month and day for an earlier date this year', () => {
-    expect(formatLastUpdated(new Date(2026, 0, 15, 9, 5).getTime(), now)).toBe('Updated Jan 15');
+  it('shows the month, day, and time for an earlier date this year', () => {
+    expect(formatLastUpdated(new Date(2026, 0, 15, 9, 5).getTime(), now)).toBe('Updated Jan 15, 9:05 AM');
   });
 
-  it('includes the year when the last update was in another year', () => {
-    expect(formatLastUpdated(new Date(2025, 11, 31, 23, 59).getTime(), now)).toBe('Updated Dec 31, 2025');
+  it('includes the year and time when the last update was in another year', () => {
+    expect(formatLastUpdated(new Date(2025, 11, 31, 23, 59).getTime(), now)).toBe('Updated Dec 31, 2025, 11:59 PM');
   });
 });
 
