@@ -34,7 +34,20 @@ describe('Notas', () => {
       const notes = await repository.getNotes();
       expect(notes).toHaveLength(1);
       expect(notes[0].title).toBe('');
+      expect(notes[0].updatedAt).toBe(2);
     });
+  });
+
+  it('shows last updated next to the saving indicator', async () => {
+    const repository = createNotesRepository(crypto.randomUUID());
+    const updatedAt = new Date(2026, 0, 15, 9, 5).getTime();
+    await repository.putNote({ id: 'one', title: '', body: 'kept', createdAt: 1, updatedAt });
+    render(<App repository={repository} />);
+
+    await screen.findByDisplayValue('kept');
+    const updated = screen.getByLabelText(/last updated/i);
+    expect(updated).toHaveTextContent(/^Updated /);
+    expect(updated.compareDocumentPosition(screen.getByRole('status')) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
   });
 
   it('waits for stored text before allowing edits', async () => {

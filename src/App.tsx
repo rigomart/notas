@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { exportBackup, importBackup } from './backup';
 import type { Note } from './notes';
 import { createNotesRepository, type NotesRepository } from './storage';
+import { formatLastUpdated, lastUpdatedLabel } from './time';
 
 // Opened lazily so the app can be prerendered where IndexedDB does not exist.
 let sharedRepository: NotesRepository | undefined;
@@ -34,7 +35,7 @@ function singleNote(notes: Note[], lastId: string | null): Note | null {
     ...first,
     title: '',
     body: ordered.map(noteText).filter((text) => text.trim()).join('\n\n\n'),
-    updatedAt: Date.now(),
+    updatedAt: Math.max(...notes.map((note) => note.updatedAt)),
   };
 }
 
@@ -214,7 +215,14 @@ export default function App({ repository }: { repository?: NotesRepository }) {
     <main class="app" data-ready={ready || undefined} data-writing={writing || undefined}>
       <span class="island island-top island-left brand">notas<span class="brand-dot" aria-hidden="true">.</span></span>
       <div class="island island-top island-right actions">
-        <span class="save" data-state={saveState} role="status" aria-label={statusLabel} title={statusLabel} />
+        <span class="save-group">
+          <span class="save" data-state={saveState} role="status" aria-label={statusLabel} title={statusLabel} />
+          {note && (
+            <span class="updated" aria-label={lastUpdatedLabel(note.updatedAt)} title={lastUpdatedLabel(note.updatedAt)}>
+              {formatLastUpdated(note.updatedAt)}
+            </span>
+          )}
+        </span>
         <button class="icon-button" aria-label="Export backup" title="Export backup" onClick={downloadBackup} disabled={!ready || !body}><Icon name="download" /></button>
         <button class="icon-button" aria-label="Import backup" title="Import backup" onClick={() => importRef.current?.click()} disabled={!ready}><Icon name="upload" /></button>
         <input ref={importRef} class="visually-hidden" type="file" accept=".json,application/json" aria-label="Import backup file" tabIndex={-1} onChange={(event) => { const file = event.currentTarget.files?.[0]; if (file) void loadBackup(file); }} />
