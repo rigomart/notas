@@ -48,6 +48,14 @@ button, textarea { font: inherit; color: inherit; }
 .brand-dot { color: var(--lamp); }
 
 .actions { gap: 2px; }
+.save-group { display: flex; align-items: center; gap: 6px; margin-right: 4px; }
+.updated {
+  color: var(--faint);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  user-select: none;
+}
 .save { width: 22px; height: 30px; display: grid; place-items: center; }
 .save::before {
   content: "";

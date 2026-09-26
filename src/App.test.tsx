@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/preact';
 import { describe, expect, it } from 'vitest';
 import App from './App';
 import { createNotesRepository } from './storage';
+import { formatLastUpdated } from './time';
 
 describe('Notas', () => {
   it('opens straight into one focused editor and restores its text', async () => {
@@ -34,7 +35,21 @@ describe('Notas', () => {
       const notes = await repository.getNotes();
       expect(notes).toHaveLength(1);
       expect(notes[0].title).toBe('');
+      expect(notes[0].updatedAt).toBe(2);
     });
+  });
+
+  it('shows last updated next to the saving indicator', async () => {
+    const repository = createNotesRepository(crypto.randomUUID());
+    const updatedAt = new Date(2026, 0, 15, 9, 5).getTime();
+    await repository.putNote({ id: 'one', title: '', body: 'kept', createdAt: 1, updatedAt });
+    render(<App repository={repository} />);
+
+    await screen.findByDisplayValue('kept');
+    const updated = screen.getByLabelText(/last updated/i);
+    expect(updated).toHaveTextContent(formatLastUpdated(updatedAt));
+    expect(updated.textContent).toMatch(/\d{1,2}:\d{2} (AM|PM)$/);
+    expect(updated.compareDocumentPosition(screen.getByRole('status')) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
   });
 
   it('waits for stored text before allowing edits', async () => {
