@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { exportBackup, importBackup } from './backup';
-import Editor from './Editor';
+import type EditorComponent from './Editor';
 import type { Note } from './notes';
 import { createNotesRepository, type NotesRepository } from './storage';
 import { formatLastUpdated, lastUpdatedLabel } from './time';
@@ -61,6 +61,7 @@ export default function App({ repository }: { repository?: NotesRepository }) {
   const [storageError, setStorageError] = useState('');
   const [writing, setWriting] = useState(false);
   const [selection, setSelection] = useState('');
+  const [Editor, setEditor] = useState<typeof EditorComponent | null>(null);
   const [editorKey, setEditorKey] = useState(0);
   const importRef = useRef<HTMLInputElement>(null);
   const timer = useRef<number | null>(null);
@@ -124,6 +125,13 @@ export default function App({ repository }: { repository?: NotesRepository }) {
       window.removeEventListener('pointermove', onPointerMove);
       if (writingTimer.current !== null) window.clearTimeout(writingTimer.current);
     };
+  }, []);
+
+  useEffect(() => {
+    // CodeMirror is most of the bundle, so it loads separately while the note is read from storage.
+    import('./Editor')
+      .then((module) => setEditor(() => module.default))
+      .catch(() => setStorageError('Could not load the editor. Reload the page to try again.'));
   }, []);
 
   useEffect(() => {
@@ -214,7 +222,7 @@ export default function App({ repository }: { repository?: NotesRepository }) {
         <input ref={importRef} class="visually-hidden" type="file" accept=".json,application/json" aria-label="Import backup file" tabIndex={-1} onChange={(event) => { const file = event.currentTarget.files?.[0]; if (file) void loadBackup(file); }} />
       </div>
 
-      {ready && (
+      {ready && Editor && (
         <Editor
           key={editorKey}
           initialText={body}
