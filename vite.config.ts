@@ -35,5 +35,7 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     css: true,
+    // Its ESM build uses extensionless imports, which only a bundler resolves.
+    server: { deps: { inline: ['@atomic-editor/editor'] } },
   },
 });

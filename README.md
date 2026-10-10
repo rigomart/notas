@@ -2,6 +2,8 @@
 
 A minimal notepad that keeps your writing in the browser. No accounts, no server, no sync.
 
+You write in Markdown. Formatting renders as you type, and the syntax shows only where your cursor is, so the saved text stays plain Markdown.
+
 ## Development
 
 Requires [Bun](https://bun.sh/).

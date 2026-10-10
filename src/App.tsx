@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { exportBackup, importBackup } from './backup';
+import Editor from './Editor';
 import type { Note } from './notes';
 import { createNotesRepository, type NotesRepository } from './storage';
 import { formatLastUpdated, lastUpdatedLabel } from './time';
@@ -60,7 +61,7 @@ export default function App({ repository }: { repository?: NotesRepository }) {
   const [storageError, setStorageError] = useState('');
   const [writing, setWriting] = useState(false);
   const [selection, setSelection] = useState('');
-  const editorRef = useRef<HTMLTextAreaElement>(null);
+  const [editorKey, setEditorKey] = useState(0);
   const importRef = useRef<HTMLInputElement>(null);
   const timer = useRef<number | null>(null);
   const writingTimer = useRef<number | null>(null);
@@ -112,18 +113,6 @@ export default function App({ repository }: { repository?: NotesRepository }) {
     writingTimer.current = window.setTimeout(() => setWriting(false), WRITING_IDLE_MS);
   }
 
-  function syncSelection() {
-    const editor = editorRef.current;
-    if (!editor || document.activeElement !== editor) return setSelection('');
-    setSelection(editor.value.slice(editor.selectionStart, editor.selectionEnd));
-  }
-
-  useEffect(() => {
-    // Also catches selections collapsed by a click or arrow key, which fire no `select` event.
-    document.addEventListener('selectionchange', syncSelection);
-    return () => document.removeEventListener('selectionchange', syncSelection);
-  }, []);
-
   useEffect(() => {
     function onPointerMove(event: PointerEvent) {
       if (Math.abs(event.movementX) + Math.abs(event.movementY) < 3) return;
@@ -155,10 +144,6 @@ export default function App({ repository }: { repository?: NotesRepository }) {
       });
     return () => { mounted = false; };
   }, [repository]);
-
-  useEffect(() => {
-    if (ready) editorRef.current?.focus();
-  }, [ready]);
 
   useEffect(() => {
     const flushOnHide = () => {
@@ -197,6 +182,7 @@ export default function App({ repository }: { repository?: NotesRepository }) {
         const existing = noteRef.current?.body ?? '';
         editBody(existing ? `${existing}\n\n\n${importedText}` : importedText);
         await flushSave();
+        setEditorKey((key) => key + 1);
       }
       setStorageError('');
     } catch (error) {
@@ -228,25 +214,15 @@ export default function App({ repository }: { repository?: NotesRepository }) {
         <input ref={importRef} class="visually-hidden" type="file" accept=".json,application/json" aria-label="Import backup file" tabIndex={-1} onChange={(event) => { const file = event.currentTarget.files?.[0]; if (file) void loadBackup(file); }} />
       </div>
 
-      <textarea
-        ref={editorRef}
-        class="editor"
-        aria-label="Note"
-        placeholder="Start writing…"
-        value={body}
-        onInput={(event) => {
-          const editor = event.currentTarget;
-          editBody(editor.value);
-          startWriting();
-          // Writing at the end keeps the newest line clear of the faded bottom edge.
-          if (editor.selectionEnd === editor.value.length) editor.scrollTop = editor.scrollHeight;
-        }}
-        onSelect={syncSelection}
-        onFocus={syncSelection}
-        onBlur={() => { setSelection(''); void flushSave(); }}
-        disabled={!ready}
-        spellcheck
-      />
+      {ready && (
+        <Editor
+          key={editorKey}
+          initialText={body}
+          onChange={(text) => { editBody(text); startWriting(); }}
+          onSelect={setSelection}
+          onBlur={() => void flushSave()}
+        />
+      )}
 
       {body && (
         // Keyed by mode so switching between note and selection counts replays the fade.

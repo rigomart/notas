@@ -21,7 +21,7 @@
 * { box-sizing: border-box; }
 html, body, #root { height: 100%; margin: 0; }
 body { min-width: 320px; overflow: hidden; background: var(--bg); }
-button, textarea { font: inherit; color: inherit; }
+button { font: inherit; color: inherit; }
 ::selection { background: rgb(214 180 124 / .26); }
 
 .app { position: relative; height: 100dvh; display: flex; flex-direction: column; }
@@ -102,32 +102,41 @@ button, textarea { font: inherit; color: inherit; }
 
 /* The page itself: one quiet column that scrolls under softly faded edges. */
 .editor {
-  --measure: 34em;
   --fade: 24px;
+  --atomic-editor-font: var(--serif);
+  --atomic-editor-font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --atomic-editor-body-size: 19px;
+  --atomic-editor-body-leading: 1.7;
+  --atomic-editor-measure: 34em;
+  --atomic-editor-bg: transparent;
+  --atomic-editor-bg-surface: rgb(255 255 255 / .05);
+  --atomic-editor-bg-panel: rgb(255 255 255 / .05);
+  --atomic-editor-border: rgb(255 255 255 / .08);
+  --atomic-editor-fg: var(--text);
+  --atomic-editor-fg-muted: var(--muted);
+  --atomic-editor-fg-faint: var(--faint);
+  --atomic-editor-accent: var(--lamp);
+  --atomic-editor-accent-soft: var(--lamp);
+  --atomic-editor-accent-bright: var(--lamp);
+  --atomic-editor-link: var(--lamp);
+  --atomic-editor-link-hover: #e6cb9c;
+  --atomic-editor-code-bg: rgb(255 255 255 / .04);
+  --atomic-editor-code-rail: rgb(214 180 124 / .35);
+  --atomic-editor-selection-bg: rgb(214 180 124 / .26);
   flex: 1;
   min-height: 0;
-  width: 100%;
-  display: block;
-  margin: 0;
-  padding: clamp(96px, 18vh, 168px) max(24px, calc((100% - var(--measure)) / 2)) 32vh;
-  border: 0;
-  outline: 0;
-  resize: none;
-  background: transparent;
-  color: var(--text);
-  caret-color: var(--lamp);
-  font-family: var(--serif);
-  font-size: 19px;
-  line-height: 1.7;
+}
+.editor .cm-editor { height: 100%; background: transparent; }
+.editor .cm-editor.cm-focused { outline: 0; }
+.editor .cm-scroller {
+  padding: clamp(96px, 18vh, 168px) 24px 32vh;
   font-kerning: normal;
-  overflow-wrap: break-word;
   scrollbar-width: thin;
   scrollbar-color: rgb(255 255 255 / .1) transparent;
   mask-image: linear-gradient(to bottom, transparent, #000 var(--fade), #000 calc(100% - var(--fade)), transparent);
 }
-.editor::placeholder { color: var(--faint); opacity: 1; }
-.editor:disabled { opacity: 1; -webkit-text-fill-color: var(--text); }
-.editor:disabled::placeholder { color: transparent; -webkit-text-fill-color: transparent; }
+.editor .cm-content { padding: 0; }
+.editor .cm-placeholder { color: var(--faint); }
 .app[data-ready] .editor { animation: settle .42s var(--ease) both; }
 
 @keyframes settle { from { opacity: 0; transform: translateY(6px); } }
@@ -162,7 +171,8 @@ button, textarea { font: inherit; color: inherit; }
 @media (max-width: 640px) {
   /* Same 22px inset for islands and text so the brand lines up with the writing. */
   .island { --inset: 22px; }
-  .editor { --fade: 20px; padding-top: calc(80px + env(safe-area-inset-top)); padding-inline: 22px; font-size: 18px; line-height: 1.65; }
+  .editor { --fade: 20px; --atomic-editor-body-size: 18px; --atomic-editor-body-leading: 1.65; }
+  .editor .cm-scroller { padding-top: calc(80px + env(safe-area-inset-top)); padding-inline: 22px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
