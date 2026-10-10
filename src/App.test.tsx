@@ -1,8 +1,21 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/preact';
+import { act, render, screen, waitFor } from '@testing-library/preact';
+import { EditorView } from '@codemirror/view';
 import { describe, expect, it } from 'vitest';
 import App from './App';
 import { createNotesRepository } from './storage';
 import { formatLastUpdated } from './time';
+
+const editorView = (editor: HTMLElement) => EditorView.findFromDOM(editor)!;
+const editorText = (editor: HTMLElement) => editorView(editor).state.doc.toString();
+
+function select(editor: HTMLElement, anchor: number, head = anchor) {
+  act(() => editorView(editor).dispatch({ selection: { anchor, head } }));
+}
+
+function type(editor: HTMLElement, text: string) {
+  const view = editorView(editor);
+  act(() => view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: text }, selection: { anchor: text.length } }));
+}
 
 describe('Notas', () => {
   it('opens straight into one focused editor and restores its text', async () => {
@@ -13,12 +26,12 @@ describe('Notas', () => {
     expect(screen.queryByRole('textbox', { name: 'Note title' })).not.toBeInTheDocument();
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
 
-    fireEvent.input(editor, { target: { value: 'Remember milk' } });
-    await waitFor(async () => expect((await repository.getNotes())[0]?.body).toBe('Remember milk'));
+    type(editor, '# Remember milk');
+    await waitFor(async () => expect((await repository.getNotes())[0]?.body).toBe('# Remember milk'));
 
     view.unmount();
     render(<App repository={repository} />);
-    expect(await screen.findByDisplayValue('Remember milk')).toBeInTheDocument();
+    expect(editorText(await screen.findByRole('textbox', { name: 'Note' }))).toBe('# Remember milk');
     expect(await repository.getNotes()).toHaveLength(1);
   });
 
@@ -30,7 +43,7 @@ describe('Notas', () => {
     render(<App repository={repository} />);
 
     const editor = await screen.findByRole('textbox', { name: 'Note' });
-    await waitFor(() => expect(editor).toHaveValue('Sketches\n\nblue house\n\n\nShopping\n\nlemons'));
+    expect(editorText(editor)).toBe('Sketches\n\nblue house\n\n\nShopping\n\nlemons');
     await waitFor(async () => {
       const notes = await repository.getNotes();
       expect(notes).toHaveLength(1);
@@ -45,40 +58,38 @@ describe('Notas', () => {
     await repository.putNote({ id: 'one', title: '', body: 'kept', createdAt: 1, updatedAt });
     render(<App repository={repository} />);
 
-    await screen.findByDisplayValue('kept');
+    await screen.findByRole('textbox', { name: 'Note' });
     const updated = screen.getByLabelText(/last updated/i);
     expect(updated).toHaveTextContent(formatLastUpdated(updatedAt));
     expect(updated.textContent).toMatch(/\d{1,2}:\d{2} (AM|PM)$/);
     expect(updated.compareDocumentPosition(screen.getByRole('status')) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
   });
 
-  it('waits for stored text before allowing edits', async () => {
+  it('waits for stored text before showing the editor', async () => {
     const base = createNotesRepository(crypto.randomUUID());
     let release!: () => void;
     const gate = new Promise<void>((resolve) => { release = resolve; });
     const repository = { ...base, getNotes: async () => { await gate; return base.getNotes(); } };
     render(<App repository={repository} />);
 
-    const editor = screen.getByRole('textbox', { name: 'Note' });
-    expect(editor).toBeDisabled();
+    expect(screen.queryByRole('textbox', { name: 'Note' })).not.toBeInTheDocument();
     release();
-    await waitFor(() => expect(editor).toBeEnabled());
+    expect(await screen.findByRole('textbox', { name: 'Note' })).toBeInTheDocument();
   });
 
   it('counts words and characters and steps the chrome aside while writing', async () => {
     const repository = createNotesRepository(crypto.randomUUID());
     const { container } = render(<App repository={repository} />);
     const editor = await screen.findByRole('textbox', { name: 'Note' });
-    await waitFor(() => expect(editor).toBeEnabled());
     const app = container.querySelector('main')!;
     expect(app).not.toHaveAttribute('data-writing');
 
-    fireEvent.input(editor, { target: { value: 'one quiet line' } });
+    type(editor, 'one quiet line');
     expect(screen.getByText('3 words')).toBeInTheDocument();
     expect(screen.getByText('14 characters')).toBeInTheDocument();
     expect(app).toHaveAttribute('data-writing');
 
-    fireEvent.input(editor, { target: { value: 'a' } });
+    type(editor, 'a');
     expect(screen.getByText('1 word')).toBeInTheDocument();
     expect(screen.getByText('1 character')).toBeInTheDocument();
     await waitFor(() => expect(app).not.toHaveAttribute('data-writing'), { timeout: 2500 });
@@ -87,18 +98,16 @@ describe('Notas', () => {
   it('counts only the selected text while there is a selection', async () => {
     const repository = createNotesRepository(crypto.randomUUID());
     render(<App repository={repository} />);
-    const editor = await screen.findByRole<HTMLTextAreaElement>('textbox', { name: 'Note' });
+    const editor = await screen.findByRole('textbox', { name: 'Note' });
     await waitFor(() => expect(editor).toHaveFocus());
-    fireEvent.input(editor, { target: { value: 'one quiet line' } });
+    type(editor, 'one quiet line');
 
-    editor.setSelectionRange(4, 14);
-    fireEvent.select(editor);
+    select(editor, 4, 14);
     expect(screen.getByText('Selected')).toBeInTheDocument();
     expect(screen.getByText('2 words')).toBeInTheDocument();
     expect(screen.getByText('10 characters')).toBeInTheDocument();
 
-    editor.setSelectionRange(14, 14);
-    fireEvent.select(editor);
+    select(editor, 14);
     expect(screen.queryByText('Selected')).not.toBeInTheDocument();
     expect(screen.getByText('3 words')).toBeInTheDocument();
   });
